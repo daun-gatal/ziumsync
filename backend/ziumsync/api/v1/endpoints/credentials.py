@@ -10,7 +10,7 @@ from ziumsync.models.domain import Credential
 router = APIRouter()
 
 
-@router.post("/", response_model=Credential)
+@router.post("/", response_model=Credential, summary="Create Credential", description="Stores database authentication credentials (e.g. AWS IAM, Basic Auth) securely in the metadata store.")
 def create_credential(credential: Credential, db: Session = Depends(get_db)):
     db.add(credential)
     db.commit()
@@ -18,13 +18,13 @@ def create_credential(credential: Credential, db: Session = Depends(get_db)):
     return credential
 
 
-@router.get("/", response_model=List[Credential])
+@router.get("/", response_model=List[Credential], summary="List Credentials", description="Returns a paginated list of all stored database credentials.")
 def read_credentials(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
     credentials = db.exec(select(Credential).offset(skip).limit(limit)).all()
     return credentials
 
 
-@router.delete("/{credential_id}")
+@router.delete("/{credential_id}", summary="Delete Credential", description="Hard-deletes a credential. Will be blocked with 409 Conflict if the credential is currently assigned to any Connection.")
 def delete_credential(credential_id: UUID, db: Session = Depends(get_db)):
     credential = db.get(Credential, credential_id)
     if not credential:

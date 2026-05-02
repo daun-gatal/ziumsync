@@ -11,7 +11,7 @@ from ziumsync.models.domain import PipelineStatus, Workspace
 router = APIRouter()
 
 
-@router.post("/", response_model=Workspace)
+@router.post("/", response_model=Workspace, summary="Create Workspace", description="Creates a new CDC Workspace logical grouping. Soft-deleted workspaces are not accessible.")
 def create_workspace(workspace: Workspace, db: Session = Depends(get_db)):
     db.add(workspace)
     db.commit()
@@ -19,13 +19,13 @@ def create_workspace(workspace: Workspace, db: Session = Depends(get_db)):
     return workspace
 
 
-@router.get("/", response_model=List[Workspace])
+@router.get("/", response_model=List[Workspace], summary="List Workspaces", description="Returns a paginated list of all active workspaces. Excludes soft-deleted workspaces.")
 def read_workspaces(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
     workspaces = db.exec(select(Workspace).where(Workspace.deleted_at == None).offset(skip).limit(limit)).all()
     return workspaces
 
 
-@router.delete("/{workspace_id}")
+@router.delete("/{workspace_id}", summary="Delete Workspace", description="Soft-deletes a workspace and all of its associated pipelines. Will be blocked with 409 Conflict if any child pipeline is currently RUNNING.")
 def delete_workspace(workspace_id: UUID, db: Session = Depends(get_db)):
     workspace = db.get(Workspace, workspace_id)
     if not workspace or workspace.deleted_at is not None:

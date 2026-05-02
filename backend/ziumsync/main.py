@@ -2,8 +2,35 @@ from fastapi import FastAPI
 
 from .api.v1.api import api_router
 
-app = FastAPI(title="ZiumSync API", description="API for managing CDC pipelines with Debezium Server", version="1.0.0")
+tags_metadata = [
+    {
+        "name": "Workspaces",
+        "description": "Operations with workspaces. Workspaces act as logical groups for CDC pipelines.",
+    },
+    {
+        "name": "Credentials",
+        "description": "Manage encrypted credentials used for database authentication.",
+    },
+    {
+        "name": "Connections",
+        "description": "Manage Source and Target engine connections. Ensures referential integrity against active pipelines.",
+    },
+    {
+        "name": "Pipelines",
+        "description": "Orchestrate, compile, and deploy Debezium CDC pipelines.",
+    },
+]
 
+app = FastAPI(
+    title="ZiumSync API",
+    description="A robust, production-grade CDC orchestration API seamlessly managing Debezium instances.",
+    version="1.0.0",
+    openapi_tags=tags_metadata,
+    license_info={
+        "name": "Apache 2.0",
+        "url": "https://www.apache.org/licenses/LICENSE-2.0.html",
+    },
+)
 
 @app.on_event("startup")
 def on_startup():

@@ -14,7 +14,7 @@ from ziumsync.services.compiler import PipelineCompilerService
 router = APIRouter()
 
 
-@router.post("/", response_model=Pipeline)
+@router.post("/", response_model=Pipeline, summary="Create Pipeline", description="Creates a new CDC pipeline linking a Source and Target connection.")
 def create_pipeline(pipeline: Pipeline, db: Session = Depends(get_db)):
     db.add(pipeline)
     db.commit()
@@ -22,13 +22,13 @@ def create_pipeline(pipeline: Pipeline, db: Session = Depends(get_db)):
     return pipeline
 
 
-@router.get("/", response_model=List[Pipeline])
+@router.get("/", response_model=List[Pipeline], summary="List Pipelines", description="Returns a paginated list of all active CDC pipelines. Excludes soft-deleted pipelines.")
 def read_pipelines(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
     pipelines = db.exec(select(Pipeline).where(Pipeline.deleted_at == None).offset(skip).limit(limit)).all()
     return pipelines
 
 
-@router.delete("/{pipeline_id}")
+@router.delete("/{pipeline_id}", summary="Delete Pipeline", description="Soft-deletes a pipeline. Will be blocked with 409 Conflict if the pipeline is currently RUNNING.")
 def delete_pipeline(pipeline_id: UUID, db: Session = Depends(get_db)):
     pipeline = db.get(Pipeline, pipeline_id)
     if not pipeline or pipeline.deleted_at is not None:
@@ -42,7 +42,7 @@ def delete_pipeline(pipeline_id: UUID, db: Session = Depends(get_db)):
     return {"message": "Pipeline successfully deleted"}
 
 
-@router.get("/{pipeline_id}")
+@router.get("/{pipeline_id}", response_model=Pipeline, summary="Get Pipeline details", description="Returns the current status, configuration, and mapped connections of a pipeline.")
 def get_pipeline(pipeline_id: UUID, db: Session = Depends(get_db)):
     pipeline = db.get(Pipeline, pipeline_id)
     if not pipeline:
@@ -50,7 +50,7 @@ def get_pipeline(pipeline_id: UUID, db: Session = Depends(get_db)):
     return pipeline
 
 
-@router.get("/{pipeline_id}/compile")
+@router.get("/{pipeline_id}/compile", summary="Compile Pipeline Config", description="Compiles the deeply nested pipeline JSON configuration into a flat Debezium application.properties string representation.")
 def compile_pipeline(pipeline_id: UUID, db: Session = Depends(get_db)):
     pipeline = db.get(Pipeline, pipeline_id)
     if not pipeline:
@@ -60,7 +60,7 @@ def compile_pipeline(pipeline_id: UUID, db: Session = Depends(get_db)):
     return {"properties": properties}
 
 
-@router.post("/{pipeline_id}/deploy")
+@router.post("/{pipeline_id}/deploy", summary="Deploy Pipeline to Docker", description="Queues a background Celery task to compile the pipeline configuration and spin up a dedicated Debezium Docker container.")
 def deploy_pipeline(pipeline_id: UUID, db: Session = Depends(get_db)):
     pipeline = db.get(Pipeline, pipeline_id)
     if not pipeline:
@@ -73,7 +73,7 @@ def deploy_pipeline(pipeline_id: UUID, db: Session = Depends(get_db)):
     return {"message": "Deployment task queued", "pipeline_id": pipeline.id}
 
 
-@router.patch("/{pipeline_id}", response_model=Pipeline)
+@router.patch("/{pipeline_id}", response_model=Pipeline, summary="Update Pipeline", description="Updates pipeline configuration. Nested JSON fields (like advanced_properties) will be deeply merged instead of overwritten. Blocked if the pipeline is currently RUNNING.")
 def update_pipeline(pipeline_id: UUID, pipeline_update: PipelineUpdate, db: Session = Depends(get_db)):
     pipeline = db.get(Pipeline, pipeline_id)
     if not pipeline:
@@ -94,7 +94,7 @@ def update_pipeline(pipeline_id: UUID, pipeline_update: PipelineUpdate, db: Sess
     return pipeline
 
 
-@router.put("/{pipeline_id}/filters", response_model=List[PipelineTableFilter])
+@router.put("/{pipeline_id}/filters", response_model=List[PipelineTableFilter], summary="Update Table Filters", description="Replaces all existing table filters (inclusion/exclusion rules) for a specific pipeline.")
 def update_pipeline_filters(pipeline_id: UUID, filters: List[PipelineTableFilterCreate], db: Session = Depends(get_db)):
     pipeline = db.get(Pipeline, pipeline_id)
     if not pipeline:

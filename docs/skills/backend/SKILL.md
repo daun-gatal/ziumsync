@@ -60,6 +60,7 @@ class ExampleModel(SQLModel, table=True):
 
 ## 4. API Router Template (FastAPI)
 Endpoints must use the `deep_merge` algorithm for `PATCH` requests and enforce State-Aware constraint locks for `DELETE`.
+Furthermore, **ALL** endpoints must include `summary` and `description` arguments in the route decorator to ensure rich, production-grade OpenAPI (Swagger) documentation.
 
 **Template:**
 ```python
@@ -75,7 +76,11 @@ from ziumsync.models.domain import Pipeline, PipelineStatus
 
 router = APIRouter()
 
-@router.delete("/{pipeline_id}")
+@router.delete(
+    "/{pipeline_id}",
+    summary="Delete Pipeline",
+    description="Soft-deletes a pipeline. Blocked with 409 Conflict if currently RUNNING."
+)
 def delete_pipeline(pipeline_id: UUID, db: Session = Depends(get_db)) -> dict[str, str]:
     pipeline = db.get(Pipeline, pipeline_id)
     if not pipeline or pipeline.deleted_at is not None:

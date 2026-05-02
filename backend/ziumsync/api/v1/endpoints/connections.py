@@ -12,7 +12,7 @@ from ziumsync.schemas.domain import SourceConnectionUpdate, TargetConnectionUpda
 router = APIRouter()
 
 
-@router.post("/source", response_model=SourceConnection)
+@router.post("/source", response_model=SourceConnection, summary="Create Source Connection", description="Creates a new database connection map for a CDC Source (e.g. PostgreSQL, MySQL).")
 def create_source_connection(connection: SourceConnection, db: Session = Depends(get_db)):
     db.add(connection)
     db.commit()
@@ -20,12 +20,12 @@ def create_source_connection(connection: SourceConnection, db: Session = Depends
     return connection
 
 
-@router.get("/source", response_model=List[SourceConnection])
+@router.get("/source", response_model=List[SourceConnection], summary="List Source Connections", description="Returns a paginated list of all active Source database connections.")
 def read_source_connections(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
     return db.exec(select(SourceConnection).offset(skip).limit(limit)).all()
 
 
-@router.post("/target", response_model=TargetConnection)
+@router.post("/target", response_model=TargetConnection, summary="Create Target Connection", description="Creates a new message broker or data warehouse connection for a CDC Target (e.g. Kafka, Redis).")
 def create_target_connection(connection: TargetConnection, db: Session = Depends(get_db)):
     db.add(connection)
     db.commit()
@@ -33,12 +33,12 @@ def create_target_connection(connection: TargetConnection, db: Session = Depends
     return connection
 
 
-@router.get("/target", response_model=List[TargetConnection])
+@router.get("/target", response_model=List[TargetConnection], summary="List Target Connections", description="Returns a paginated list of all active Target connections.")
 def read_target_connections(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
     return db.exec(select(TargetConnection).offset(skip).limit(limit)).all()
 
 
-@router.patch("/source/{connection_id}", response_model=SourceConnection)
+@router.patch("/source/{connection_id}", response_model=SourceConnection, summary="Update Source Connection", description="Updates source connection properties using a deep-merge strategy. Blocked if the connection is mapped to a RUNNING pipeline.")
 def update_source_connection(connection_id: UUID, update_data: SourceConnectionUpdate, db: Session = Depends(get_db)):
     connection = db.get(SourceConnection, connection_id)
     if not connection:
@@ -60,7 +60,7 @@ def update_source_connection(connection_id: UUID, update_data: SourceConnectionU
     return connection
 
 
-@router.patch("/target/{connection_id}", response_model=TargetConnection)
+@router.patch("/target/{connection_id}", response_model=TargetConnection, summary="Update Target Connection", description="Updates target connection properties using a deep-merge strategy. Blocked if the connection is mapped to a RUNNING pipeline.")
 def update_target_connection(connection_id: UUID, update_data: TargetConnectionUpdate, db: Session = Depends(get_db)):
     connection = db.get(TargetConnection, connection_id)
     if not connection:
@@ -82,7 +82,7 @@ def update_target_connection(connection_id: UUID, update_data: TargetConnectionU
     return connection
 
 
-@router.delete("/source/{connection_id}")
+@router.delete("/source/{connection_id}", summary="Delete Source Connection", description="Hard-deletes a Source connection. Will be blocked with 409 Conflict if the connection is currently mapped to ANY existing pipeline to preserve referential integrity.")
 def delete_source_connection(connection_id: UUID, db: Session = Depends(get_db)):
     connection = db.get(SourceConnection, connection_id)
     if not connection:
@@ -96,7 +96,7 @@ def delete_source_connection(connection_id: UUID, db: Session = Depends(get_db))
     return {"message": "Source connection successfully deleted"}
 
 
-@router.delete("/target/{connection_id}")
+@router.delete("/target/{connection_id}", summary="Delete Target Connection", description="Hard-deletes a Target connection. Will be blocked with 409 Conflict if the connection is currently mapped to ANY existing pipeline to preserve referential integrity.")
 def delete_target_connection(connection_id: UUID, db: Session = Depends(get_db)):
     connection = db.get(TargetConnection, connection_id)
     if not connection:
