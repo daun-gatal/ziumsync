@@ -1,0 +1,21 @@
+version: '3.8'
+
+services:
+  db_migration:
+    build:
+      context: ./backend
+
+  api:
+    build:
+      context: ./backend
+    # Mount the local codebase for hot-reloading during development
+    volumes:
+      - ./backend:/app
+
+  worker:
+    build:
+      context: ./backend
+    # Mount the local codebase for hot-reloading during development
+    volumes:
+      - ./backend:/app
+      - /var/run/docker.sock:/var/run/docker.sock

@@ -1,0 +1,56 @@
+version: '3.8'
+
+services:
+  db_migration:
+    image: ghcr.io/daun-gatal/ziumsync-backend:latest
+    environment:
+      - DATABASE_URL=postgresql+psycopg2://ziumsync:password@db:5432/ziumsync
+    depends_on:
+      - db
+    # Runs migrations and immediately exits
+    command: alembic upgrade head
+
+  api:
+    image: ghcr.io/daun-gatal/ziumsync-backend:latest
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql+psycopg2://ziumsync:password@db:5432/ziumsync
+      - REDIS_URL=redis://redis:6379/0
+    depends_on:
+      db_migration:
+        condition: service_completed_successfully
+      redis:
+        condition: service_started
+    # Runs the FastAPI server
+    command: uvicorn ziumsync.main:app --host 0.0.0.0 --port 8000
+
+  worker:
+    image: ghcr.io/daun-gatal/ziumsync-backend:latest
+    environment:
+      - DATABASE_URL=postgresql+psycopg2://ziumsync:password@db:5432/ziumsync
+      - REDIS_URL=redis://redis:6379/0
+    volumes:
+      # CRITICAL: We mount the docker socket so the Celery worker can run 'docker run' to spawn Debezium containers!
+      - /var/run/docker.sock:/var/run/docker.sock 
+    depends_on:
+      db_migration:
+        condition: service_completed_successfully
+      redis:
+        condition: service_started
+    # Runs the Celery worker
+    command: celery -A ziumsync.worker.celery_app worker --loglevel=info
+
+  db:
+    image: postgres:15
+    environment:
+      - POSTGRES_USER=ziumsync
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=ziumsync
+    ports:
+      - "5432:5432"
+
+  redis:
+    image: redis:7
+    ports:
+      - "6379:6379"
