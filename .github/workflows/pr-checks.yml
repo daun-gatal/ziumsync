@@ -34,6 +34,33 @@ jobs:
           cd backend
           uv run mypy ziumsync/ tests/
 
+  frontend-checks:
+    name: Validate Frontend
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: latest
+
+      - name: Install Dependencies
+        run: |
+          cd frontend
+          bun install --frozen-lockfile
+
+      - name: Type Check
+        run: |
+          cd frontend
+          bun run tsc --noEmit
+
+      - name: Build
+        run: |
+          cd frontend
+          bun run build
+
       - name: Lint and Format Check (Ruff)
         run: |
           cd backend

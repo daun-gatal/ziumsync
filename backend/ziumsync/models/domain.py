@@ -13,6 +13,7 @@ PortableJSON = JSON().with_variant(JSONB, "postgresql")
 
 
 class AuthType(str, enum.Enum):
+    NONE = "NONE"
     BASIC = "BASIC"
     SASL_JAAS = "SASL_JAAS"
     AWS_IAM = "AWS_IAM"

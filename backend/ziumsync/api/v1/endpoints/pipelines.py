@@ -16,6 +16,12 @@ router = APIRouter()
 
 @router.post("/", response_model=Pipeline, summary="Create Pipeline", description="Creates a new CDC pipeline linking a Source and Target connection.")
 def create_pipeline(pipeline: Pipeline, db: Session = Depends(get_db)):
+    if isinstance(pipeline.workspace_id, str):
+        pipeline.workspace_id = UUID(pipeline.workspace_id)
+    if isinstance(pipeline.source_connection_id, str):
+        pipeline.source_connection_id = UUID(pipeline.source_connection_id)
+    if isinstance(pipeline.target_connection_id, str):
+        pipeline.target_connection_id = UUID(pipeline.target_connection_id)
     db.add(pipeline)
     db.commit()
     db.refresh(pipeline)

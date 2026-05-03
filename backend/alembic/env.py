@@ -16,6 +16,7 @@ if config.config_file_name is not None:
 import os
 
 from sqlmodel import SQLModel
+import ziumsync.models.domain
 
 target_metadata = SQLModel.metadata
 

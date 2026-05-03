@@ -14,6 +14,10 @@ router = APIRouter()
 
 @router.post("/source", response_model=SourceConnection, summary="Create Source Connection", description="Creates a new database connection map for a CDC Source (e.g. PostgreSQL, MySQL).")
 def create_source_connection(connection: SourceConnection, db: Session = Depends(get_db)):
+    if isinstance(connection.workspace_id, str):
+        connection.workspace_id = UUID(connection.workspace_id)
+    if isinstance(connection.credential_id, str):
+        connection.credential_id = UUID(connection.credential_id)
     db.add(connection)
     db.commit()
     db.refresh(connection)
@@ -27,6 +31,10 @@ def read_source_connections(skip: int = 0, limit: int = 100, db: Session = Depen
 
 @router.post("/target", response_model=TargetConnection, summary="Create Target Connection", description="Creates a new message broker or data warehouse connection for a CDC Target (e.g. Kafka, Redis).")
 def create_target_connection(connection: TargetConnection, db: Session = Depends(get_db)):
+    if isinstance(connection.workspace_id, str):
+        connection.workspace_id = UUID(connection.workspace_id)
+    if isinstance(connection.credential_id, str):
+        connection.credential_id = UUID(connection.credential_id)
     db.add(connection)
     db.commit()
     db.refresh(connection)

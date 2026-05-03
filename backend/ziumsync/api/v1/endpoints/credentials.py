@@ -12,6 +12,8 @@ router = APIRouter()
 
 @router.post("/", response_model=Credential, summary="Create Credential", description="Stores database authentication credentials (e.g. AWS IAM, Basic Auth) securely in the metadata store.")
 def create_credential(credential: Credential, db: Session = Depends(get_db)):
+    if isinstance(credential.workspace_id, str):
+        credential.workspace_id = UUID(credential.workspace_id)
     db.add(credential)
     db.commit()
     db.refresh(credential)

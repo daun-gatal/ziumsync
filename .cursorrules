@@ -3,10 +3,11 @@
 You are an advanced AI coding assistant working on the ZiumSync project.
 
 ## Critical Instructions
-Before you write any code, modify any architecture, or create any tests in the `backend/` directory, you **MUST** first read and strictly adhere to the rules defined in the Backend Agent Playbook:
-`docs/skills/backend/SKILL.md`
+Before you write any code, modify any architecture, or create any tests in the `backend/` or `frontend/` directory, you **MUST** first read and strictly adhere to the rules defined in the following Playbooks:
+1. **Backend:** `docs/skills/backend/SKILL.md`
+2. **Frontend:** `docs/skills/frontend/SKILL.md`
 
-Failure to follow the exact dependency management (uv), typing (mypy/ruff), database conventions (SQLModel/uuid4), and Error Handling standards outlined in that document will result in CI/CD pipeline failures.
+Failure to follow the exact dependency management (uv), typing (mypy/ruff), database conventions (SQLModel/uuid4), and Error Handling standards outlined in the Backend Playbook will result in CI/CD pipeline failures.
 
 ## The Self-Updating Mandate
-If you are tasked with implementing a **new architectural pattern**, adding a **new core dependency**, or modifying the **deployment strategy**, you MUST automatically update `docs/skills/backend/SKILL.md` to reflect these new standards before finishing your task. You are a self-documenting agent.
+If you are tasked with implementing a **new architectural pattern**, adding a **new core dependency**, or modifying the **deployment strategy**, you MUST automatically update the relevant Playbook (`backend/SKILL.md` or `frontend/SKILL.md`) to reflect these new standards before finishing your task. You are a self-documenting agent.

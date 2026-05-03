@@ -50,6 +50,13 @@ services:
     ports:
       - "5432:5432"
 
+  frontend:
+    image: ghcr.io/daun-gatal/ziumsync-frontend:latest
+    ports:
+      - "8080:80"
+    depends_on:
+      - api
+
   redis:
     image: redis:7
     ports:
