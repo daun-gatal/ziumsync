@@ -24,7 +24,20 @@ class WorkerProvider(abc.ABC):
 
 class DockerWorkerProvider(WorkerProvider):
     def __init__(self) -> None:
-        self.client = docker.from_env()
+        docker_host = os.environ.get("DOCKER_HOST")
+        if docker_host:
+            self.client = docker.DockerClient(base_url=docker_host)
+            self.client.ping()
+            return
+
+        try:
+            self.client = docker.from_env()
+            # Test connection
+            self.client.ping()
+        except Exception:
+            raise docker.errors.DockerException(
+                "Could not connect to Docker. Please set the DOCKER_HOST environment variable."
+            )
 
     def deploy_pipeline(self, pipeline_id: UUID, config_properties: str) -> str:
         # 1. Create a directory to hold the config
@@ -36,7 +49,7 @@ class DockerWorkerProvider(WorkerProvider):
 
         # 2. Run the Docker container
         container = self.client.containers.run(
-            "debezium/server:latest",
+            "quay.io/debezium/server:latest",
             volumes={f"{config_dir}/conf": {"bind": "/debezium/conf", "mode": "ro"}},
             detach=True,
             name=f"ziumsync-pipeline-{pipeline_id}",

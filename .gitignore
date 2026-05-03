@@ -67,3 +67,11 @@ Thumbs.db
 *.db
 *.sqlite
 *.sqlite3
+
+# Local runtime files (Makefile)
+api.log
+worker.log
+frontend.log
+.api.pid
+.worker.pid
+.frontend.pid

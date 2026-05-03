@@ -71,7 +71,7 @@ def deploy_pipeline(pipeline_id: UUID, db: Session = Depends(get_db)):
     pipeline = db.get(Pipeline, pipeline_id)
     if not pipeline:
         raise HTTPException(status_code=404, detail="Pipeline not found")
-
+    from ziumsync.worker.celery_app import celery_app
     from ziumsync.worker.tasks import deploy_pipeline_task
 
     deploy_pipeline_task.delay(pipeline.id)
