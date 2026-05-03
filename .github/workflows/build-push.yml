@@ -1,58 +1,58 @@
-name: Build and Push
+# name: Build and Push
 
-on:
-  push:
-    branches:
-      - main
+# on:
+#   push:
+#     branches:
+#       - main
 
-jobs:
-  build-and-push:
-    name: Build and Push to GHCR
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write # Required to push to GitHub Container Registry
+# jobs:
+#   build-and-push:
+#     name: Build and Push to GHCR
+#     runs-on: ubuntu-latest
+#     permissions:
+#       contents: read
+#       packages: write # Required to push to GitHub Container Registry
 
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+#     steps:
+#       - name: Checkout code
+#         uses: actions/checkout@v4
 
-      - name: Log in to the Container registry
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+#       - name: Log in to the Container registry
+#         uses: docker/login-action@v3
+#         with:
+#           registry: ghcr.io
+#           username: ${{ github.actor }}
+#           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+#       - name: Set up Docker Buildx
+#         uses: docker/setup-buildx-action@v3
 
-      - name: Build and push backend image
-        uses: docker/build-push-action@v5
-        with:
-          context: ./backend
-          file: ./backend/Dockerfile
-          push: true
-          # Tags both latest and the commit SHA for absolute traceability
-          tags: |
-            ghcr.io/daun-gatal/ziumsync-backend:latest
-            ghcr.io/daun-gatal/ziumsync-backend:${{ github.sha }}
-          # Utilize GitHub Actions cache
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+#       - name: Build and push backend image
+#         uses: docker/build-push-action@v5
+#         with:
+#           context: ./backend
+#           file: ./backend/Dockerfile
+#           push: true
+#           # Tags both latest and the commit SHA for absolute traceability
+#           tags: |
+#             ghcr.io/daun-gatal/ziumsync-backend:latest
+#             ghcr.io/daun-gatal/ziumsync-backend:${{ github.sha }}
+#           # Utilize GitHub Actions cache
+#           cache-from: type=gha
+#           cache-to: type=gha,mode=max
 
-      - name: Build and push frontend image
-        uses: docker/build-push-action@v5
-        with:
-          context: ./frontend
-          file: ./frontend/Dockerfile
-          push: true
-          # Note: Build args must be provided if the frontend relies on them at build-time.
-          # We pass a placeholder here, assuming runtime config might be managed by Nginx later or via standard Vite defaults.
-          build-args: |
-            VITE_API_BASE_URL=/api/v1
-          tags: |
-            ghcr.io/daun-gatal/ziumsync-frontend:latest
-            ghcr.io/daun-gatal/ziumsync-frontend:${{ github.sha }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+#       - name: Build and push frontend image
+#         uses: docker/build-push-action@v5
+#         with:
+#           context: ./frontend
+#           file: ./frontend/Dockerfile
+#           push: true
+#           # Note: Build args must be provided if the frontend relies on them at build-time.
+#           # We pass a placeholder here, assuming runtime config might be managed by Nginx later or via standard Vite defaults.
+#           build-args: |
+#             VITE_API_BASE_URL=/api/v1
+#           tags: |
+#             ghcr.io/daun-gatal/ziumsync-frontend:latest
+#             ghcr.io/daun-gatal/ziumsync-frontend:${{ github.sha }}
+#           cache-from: type=gha
+#           cache-to: type=gha,mode=max
