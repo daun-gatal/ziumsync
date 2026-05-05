@@ -122,6 +122,12 @@ export const deletePipeline = (id: string): Promise<{ message: string }> =>
 export const deployPipeline = (id: string): Promise<{ message: string; pipeline_id: string }> =>
   apiFetch(`/pipelines/${id}/deploy`, { method: 'POST' });
 
+export const stopPipeline = (id: string): Promise<{ message: string; pipeline_id: string }> =>
+  apiFetch(`/pipelines/${id}/stop`, { method: 'POST' });
+
+export const restartPipeline = (id: string): Promise<{ message: string; pipeline_id: string }> =>
+  apiFetch(`/pipelines/${id}/restart`, { method: 'POST' });
+
 export const compilePipeline = (id: string): Promise<{ properties: string }> =>
   apiFetch(`/pipelines/${id}/compile`);
 
@@ -130,3 +136,12 @@ export const updatePipelineFilters = (
   filters: PipelineTableFilterPayload[]
 ): Promise<PipelineTableFilter[]> =>
   apiFetch(`/pipelines/${id}/filters`, { method: 'PUT', body: JSON.stringify(filters) });
+
+export const getPipelineLogs = (id: string): Promise<{ logs: string }> =>
+  apiFetch(`/pipelines/${id}/logs`);
+
+export const getPipelineLogsStreamUrl = (id: string, tail: number = 100): string =>
+  `${API_ROOT}/pipelines/${id}/logs/stream?tail=${tail}`;
+
+export const getPipelineLiveStatus = (id: string): Promise<{ status: string; container_status: string }> =>
+  apiFetch(`/pipelines/${id}/live_status`);

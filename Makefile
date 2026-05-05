@@ -15,7 +15,7 @@ run:
 	@echo "Running Database Migrations..."
 	cd backend && uv run alembic upgrade head
 	@echo "Starting Backend API..."
-	cd backend && uv run uvicorn ziumsync.main:app --reload > ../api.log 2>&1 & echo $$! > .api.pid
+	cd backend && uv run uvicorn ziumsync.main:app --reload --reload-exclude '*.db' > ../api.log 2>&1 & echo $$! > .api.pid
 	@echo "Starting Celery Worker..."
 	cd backend && uv run celery -A ziumsync.worker.celery_app worker --loglevel=info > ../worker.log 2>&1 & echo $$! > .worker.pid
 	@echo "Starting Frontend..."

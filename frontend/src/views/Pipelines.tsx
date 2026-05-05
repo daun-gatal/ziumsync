@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Trash2, Play, FileCode, Eye } from 'lucide-react';
-import { usePipelines, useDeletePipeline, useDeployPipeline, useCompilePipeline, useCreatePipeline } from '../hooks/usePipelines';
+import { Trash2, Play, FileCode, Eye, Square } from 'lucide-react';
+import { usePipelines, useDeletePipeline, useDeployPipeline, useCompilePipeline, useCreatePipeline, useStopPipeline } from '../hooks/usePipelines';
 import { useSourceConnections } from '../hooks/useConnections';
 import { useTargetConnections } from '../hooks/useConnections';
 import { StatusBadge } from '../components/ui/Badge';
@@ -22,8 +22,9 @@ export default function Pipelines() {
   const { data: sources = [] } = useSourceConnections();
   const { data: targets = [] } = useTargetConnections();
 
-  const remove  = useDeletePipeline();
-  const deploy  = useDeployPipeline();
+  const remove = useDeletePipeline();
+  const deploy = useDeployPipeline();
+  const stop = useStopPipeline();
   const compile = useCompilePipeline();
 
   const [compileOpen, setCompileOpen] = useState(false);
@@ -60,11 +61,12 @@ export default function Pipelines() {
     if (!form.name || !form.source_connection_id || !form.target_connection_id || !selectedId) return;
     createPipeline.mutate(
       { workspace_id: selectedId, ...form },
-      { onSuccess: (data) => { 
-          setCreateOpen(false); 
+      {
+        onSuccess: (data) => {
+          setCreateOpen(false);
           setForm({ name: '', source_connection_id: '', target_connection_id: '' });
           navigate(`/pipelines/${data.id}`);
-        } 
+        }
       }
     );
   }
@@ -100,8 +102,9 @@ export default function Pipelines() {
             </thead>
             <tbody>
               {filtered.map((p) => {
-                const isRunning   = p.status === 'RUNNING';
+                const isRunning = p.status === 'RUNNING';
                 const isDeploying = p.status === 'DEPLOYING';
+                const isStopping = p.status === 'STOPPING';
                 return (
                   <tr key={p.id}>
                     <td style={{ fontWeight: 500 }}>{p.name}</td>
@@ -124,16 +127,26 @@ export default function Pipelines() {
                         </button>
                         <button
                           className="btn-icon"
-                          title="Deploy"
-                          disabled={isRunning || isDeploying}
+                          title={p.status === 'FAILED' ? 'Retry' : 'Start'}
+                          disabled={isRunning || isDeploying || isStopping}
                           onClick={() => deploy.mutate(p.id)}
                         >
                           <Play />
                         </button>
+                        {isRunning && (
+                          <button
+                            className="btn-icon"
+                            title="Stop"
+                            disabled={stop.isPending}
+                            onClick={() => stop.mutate(p.id)}
+                          >
+                            <Square size={16} fill="currentColor" />
+                          </button>
+                        )}
                         <button
                           className="btn-icon"
                           title="Delete"
-                          disabled={isRunning || isDeploying}
+                          disabled={isRunning || isDeploying || isStopping}
                           onClick={() => {
                             if (confirm(`Delete pipeline "${p.name}"?`)) remove.mutate(p.id);
                           }}

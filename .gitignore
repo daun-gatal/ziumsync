@@ -75,3 +75,4 @@ frontend.log
 .api.pid
 .worker.pid
 .frontend.pid
+backend/ziumsync/runtime/

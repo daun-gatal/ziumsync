@@ -10,6 +10,9 @@ from ziumsync.core.utils import deep_merge
 from ziumsync.models.domain import Pipeline, PipelineStatus, PipelineTableFilter
 from ziumsync.schemas.domain import PipelineTableFilterCreate, PipelineUpdate
 from ziumsync.services.compiler import PipelineCompilerService
+from ziumsync.worker.tasks import worker_provider
+from ziumsync.worker.celery_app import celery_app  # noqa: F401
+from fastapi.responses import StreamingResponse
 
 router = APIRouter()
 
@@ -43,6 +46,13 @@ def delete_pipeline(pipeline_id: UUID, db: Session = Depends(get_db)):
     if pipeline.status == PipelineStatus.RUNNING:
         raise HTTPException(status_code=409, detail="Cannot delete a RUNNING pipeline. Stop it first.")
 
+    # Cleanup container if it exists
+    if pipeline.current_deployment_id:
+        worker_provider.remove_pipeline(pipeline.current_deployment_id)
+    
+    # Cleanup local config files
+    worker_provider.remove_config(pipeline.id)
+
     pipeline.deleted_at = datetime.now(timezone.utc)
     db.commit()
     return {"message": "Pipeline successfully deleted"}
@@ -66,17 +76,84 @@ def compile_pipeline(pipeline_id: UUID, db: Session = Depends(get_db)):
     return {"properties": properties}
 
 
-@router.post("/{pipeline_id}/deploy", summary="Deploy Pipeline to Docker", description="Queues a background Celery task to compile the pipeline configuration and spin up a dedicated Debezium Docker container.")
+@router.post("/{pipeline_id}/deploy", summary="Start/Deploy Pipeline", description="Queues a background Celery task to compile the pipeline configuration and spin up a dedicated Debezium Docker container.")
 def deploy_pipeline(pipeline_id: UUID, db: Session = Depends(get_db)):
     pipeline = db.get(Pipeline, pipeline_id)
     if not pipeline:
         raise HTTPException(status_code=404, detail="Pipeline not found")
-    from ziumsync.worker.celery_app import celery_app
-    from ziumsync.worker.tasks import deploy_pipeline_task
-
-    deploy_pipeline_task.delay(pipeline.id)
+    celery_app.send_task("ziumsync.worker.tasks.deploy_pipeline_task", args=[pipeline.id])
 
     return {"message": "Deployment task queued", "pipeline_id": pipeline.id}
+
+
+@router.post("/{pipeline_id}/stop", summary="Stop Pipeline", description="Queues a background task to stop the pipeline container while preserving logs for debugging.")
+def stop_pipeline(pipeline_id: UUID, db: Session = Depends(get_db)):
+    pipeline = db.get(Pipeline, pipeline_id)
+    if not pipeline:
+        raise HTTPException(status_code=404, detail="Pipeline not found")
+    celery_app.send_task("ziumsync.worker.tasks.stop_pipeline_task", args=[pipeline.id])
+    return {"message": "Stop task queued", "pipeline_id": pipeline.id}
+
+
+@router.post("/{pipeline_id}/restart", summary="Restart Pipeline", description="Queues a background task to stop then restart the pipeline container.")
+def restart_pipeline(pipeline_id: UUID, db: Session = Depends(get_db)):
+    pipeline = db.get(Pipeline, pipeline_id)
+    if not pipeline:
+        raise HTTPException(status_code=404, detail="Pipeline not found")
+    celery_app.send_task("ziumsync.worker.tasks.restart_pipeline_task", args=[pipeline.id])
+    return {"message": "Restart task queued", "pipeline_id": pipeline.id}
+
+
+@router.get("/{pipeline_id}/live_status", summary="Get Pipeline Live Status", description="Fetches the live status of the deployment container. Self-heals the DB status if the container crashed.")
+def get_pipeline_live_status(pipeline_id: UUID, db: Session = Depends(get_db)):
+    pipeline = db.get(Pipeline, pipeline_id)
+    if not pipeline:
+        raise HTTPException(status_code=404, detail="Pipeline not found")
+
+    if not pipeline.current_deployment_id:
+        return {"status": pipeline.status, "container_status": "NONE"}
+
+    container_status = worker_provider.get_status(pipeline.current_deployment_id)
+
+    # Self-healing: if DB says it's running but it's exited/not found, mark as failed
+    if pipeline.status == PipelineStatus.RUNNING and container_status in ("exited", "dead", "NOT_FOUND"):
+        pipeline.status = PipelineStatus.FAILED
+        db.commit()
+
+    return {"status": pipeline.status, "container_status": container_status}
+
+
+@router.get("/{pipeline_id}/logs", summary="Get Pipeline Logs", description="Fetches the live logs of the deployment container.")
+def get_pipeline_logs(pipeline_id: UUID, db: Session = Depends(get_db)):
+    pipeline = db.get(Pipeline, pipeline_id)
+    if not pipeline:
+        raise HTTPException(status_code=404, detail="Pipeline not found")
+
+    if not pipeline.current_deployment_id:
+        return {"logs": "No active deployment."}
+
+    logs = worker_provider.get_logs(pipeline.current_deployment_id)
+    return {"logs": logs}
+
+
+@router.get("/{pipeline_id}/logs/stream", summary="Stream Pipeline Logs", description="Streams live logs from the container using Server-Sent Events (SSE) or simple streaming response.")
+def stream_pipeline_logs(pipeline_id: UUID, tail: int = 100, db: Session = Depends(get_db)):
+    pipeline = db.get(Pipeline, pipeline_id)
+    if not pipeline:
+        raise HTTPException(status_code=404, detail="Pipeline not found")
+
+    if not pipeline.current_deployment_id:
+        raise HTTPException(status_code=400, detail="Pipeline is not running")
+
+    def log_generator():
+        log_stream = worker_provider.stream_logs(pipeline.current_deployment_id, tail=tail)
+        if log_stream is None:
+            yield "Container not found.\n"
+            return
+        for line in log_stream:
+            yield line.decode("utf-8")
+
+    return StreamingResponse(log_generator(), media_type="text/event-stream")
 
 
 @router.patch("/{pipeline_id}", response_model=Pipeline, summary="Update Pipeline", description="Updates pipeline configuration. Nested JSON fields (like advanced_properties) will be deeply merged instead of overwritten. Blocked if the pipeline is currently RUNNING.")

@@ -2,7 +2,7 @@ import os
 
 from celery import Celery
 
-redis_url = os.environ.get("REDIS_URL", "redis://localhost:6379/0")
+redis_url = os.environ.get("REDIS_URL") or "redis://127.0.0.1:6379/0"
 
 celery_app = Celery("ziumsync_worker", broker=redis_url, backend=redis_url, include=["ziumsync.worker.tasks"])
 

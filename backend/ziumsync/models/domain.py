@@ -33,6 +33,7 @@ class PipelineStatus(str, enum.Enum):
     RUNNING = "RUNNING"
     FAILED = "FAILED"
     DEPLOYING = "DEPLOYING"
+    STOPPING = "STOPPING"
 
 
 class SnapshotMode(str, enum.Enum):

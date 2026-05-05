@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from .api.v1.api import api_router
+from .worker.celery_app import celery_app  # noqa: F401
 
 tags_metadata = [
     {

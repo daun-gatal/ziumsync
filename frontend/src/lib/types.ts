@@ -3,7 +3,7 @@
 export type AuthType = 'NONE' | 'BASIC' | 'SASL_JAAS' | 'AWS_IAM';
 export type SourceEngine = 'POSTGRESQL' | 'MYSQL';
 export type TargetEngine = 'KAFKA';
-export type PipelineStatus = 'STOPPED' | 'RUNNING' | 'FAILED' | 'DEPLOYING';
+export type PipelineStatus = 'STOPPED' | 'RUNNING' | 'FAILED' | 'DEPLOYING' | 'STOPPING';
 export type SnapshotMode = 'INITIAL' | 'SCHEMA_ONLY' | 'NEVER' | 'ALWAYS';
 export type FormatType = 'JSON' | 'AVRO' | 'PROTOBUF';
 

@@ -10,6 +10,10 @@ import {
   updatePipeline,
   updatePipelineFilters,
   ApiError,
+  getPipelineLogs,
+  getPipelineLiveStatus,
+  stopPipeline,
+  restartPipeline,
 } from '../lib/api';
 import type {
   CreatePipelinePayload,
@@ -73,7 +77,31 @@ export function useDeployPipeline() {
     mutationFn: (id: string) => deployPipeline(id),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: [QK] });
-      toast.success('Deployment queued — status will update shortly');
+      toast.success('Start task queued');
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+}
+
+export function useStopPipeline() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => stopPipeline(id),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: [QK] });
+      toast.success('Stop task queued');
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+}
+
+export function useRestartPipeline() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => restartPipeline(id),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: [QK] });
+      toast.success('Restart task queued');
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -97,5 +125,23 @@ export function useUpdatePipelineFilters() {
     },
     onError: (e: ApiError) =>
       toast.error(e.status === 409 ? e.message : 'Failed to save filters'),
+  });
+}
+
+export function usePipelineLogs(id: string, enabled: boolean) {
+  return useQuery({
+    queryKey: [QK, id, 'logs'],
+    queryFn: () => getPipelineLogs(id),
+    enabled: enabled && !!id,
+    refetchInterval: 3000,
+  });
+}
+
+export function usePipelineLiveStatus(id: string, enabled: boolean) {
+  return useQuery({
+    queryKey: [QK, id, 'live_status'],
+    queryFn: () => getPipelineLiveStatus(id),
+    enabled: enabled && !!id,
+    refetchInterval: 3000,
   });
 }
